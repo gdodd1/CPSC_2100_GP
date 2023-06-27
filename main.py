@@ -2,15 +2,20 @@ from tkinter import *
 from PIL import Image, ImageTk
 import requests
 import pickle
+# import currencyapicom
 
 def main():
-    
+
     exchangeRateDict = None #this dictionary is populated in the main
                             #program where the "scrape" function is called
     
     infile = open("code/currencies.dat",'rb') 
     countryDict = pickle.load(infile)  
     infile.close() 
+    #write countryDict to shitter.txt
+    outfile = open("shitter.txt", 'w')
+    outfile.write(str(countryDict))
+    outfile.close()
     countries = [k for k in countryDict.keys() ]
     countries.sort()
     
@@ -19,20 +24,18 @@ def main():
         amount = float(amtA.get())
         from_country = countries[countryFrom.curselection()[0]]
         to_country = countries[countryTo.curselection()[0]]
-        
         if from_country == to_country:
             amtB.set(str(amount))
             return
-        
-        # exchange rate dict is formatted as follows: {code: countryCode, rate: exchangeRate}
+        fromAbv = countryDict[from_country][1]
+        toAbv = countryDict[to_country][1]
 
-        toIndex = countries.index(to_country)
-        fromIndex = countries.index(from_country)
-
-        to_rate = exchangeRates[toIndex]
-        from_rate = exchangeRates[fromIndex]
+        fromRate = exchangeRateDict['data'][fromAbv]['value']
+        toRate = exchangeRateDict['data'][toAbv]['value']
+        print(f'{from_country} to {to_country} is {fromRate} to {toRate}')
+        #convert amount to converted_amount, all conversion rates are relative to USD
+        converted_amount = (amount / fromRate) * toRate
         
-        converted_amount = amount / from_rate * to_rate
         amtB.set(str(round(converted_amount, 2)))
 
     
@@ -146,7 +149,8 @@ def main():
     countryTo.bind("<<ListboxSelect>>", changeCountryTo)
     yscroll2["command"] = countryTo.yview
     
-    
+    cntryToLabel = Label(window,image=cntryTo,width=55,height=40,bg="white")
+    cntryToLabel.grid(row=1,column=6,sticky=W)
     
     # make a new frame
     buttonFrame = Frame(window)
@@ -188,16 +192,14 @@ def main():
     
     countryFrom.selection_set(first=0)
     countryTo.selection_set(first = 0)
-    exchangeRateDict = scrapeCurrencies()
-    # open output file
-    outFile = open('shitter.txt','w')
+    # exchangeRateDict = scrapeCurrencies()
+    infile = open("xchange.dat",'rb')
+    exchangeRateDict = pickle.load(infile)
+    infile.close()
+    print(exchangeRateDict)
+    
     exchangeRates = [x['value'] for x in exchangeRateDict['data'].values()]
-    # write exchangeRateDict to file
-    outFile.write(str(exchangeRateDict))
-    outFile.close()
-    print(exchangeRates)
-    # print(exchangeRateDict)
-    # print(f'\n\n\n\n\n{countryDict}')
+    # print(exchangeRates)
     window.mainloop()
     
 main()
